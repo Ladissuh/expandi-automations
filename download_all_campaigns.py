@@ -293,10 +293,13 @@ def main():
 
         time.sleep(SLEEP_BETWEEN_ACCOUNTS_SEC)
 
-    ts = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    out_file = Path(__file__).with_name(f"all_campaigns_{ts}.json")
-    with open(out_file, "w", encoding="utf-8") as f:
-        json.dump(all_rows, f, ensure_ascii=False, indent=2)
+    # Always write to outputs/ and overwrite the previous file
+out_dir = Path("outputs")
+out_dir.mkdir(exist_ok=True)
+
+out_file = out_dir / "all_campaigns.json"
+with open(out_file, "w", encoding="utf-8") as f:
+    json.dump(all_rows, f, ensure_ascii=False, indent=2)
 
     print(f"\n✅ Done. Saved: {out_file}")
     print(f"📦 Total rows (campaign instances): {len(all_rows)}")
