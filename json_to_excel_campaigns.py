@@ -6,8 +6,12 @@ from pathlib import Path
 import pandas as pd
 
 
-DEFAULT_INPUT_GLOB = "all_campaigns_*.json"
-OUT_XLSX_NAME = "campaigns_stats_clean.xlsx"
+# GitHub pipeline: input je vždy přesně tento soubor
+DEFAULT_INPUT_PATH = Path("outputs") / "all_campaigns.json"
+
+# A výstup chceme vždy přepsat do stejného Excelu
+OUT_XLSX_PATH = Path("outputs") / "expandi_campaigns.xlsx"
+
 
 STATS_KEYS = [
     "stopped",
@@ -120,13 +124,12 @@ def flatten_row(row: dict) -> dict:
 
 
 def main():
-    here = Path(__file__).resolve().parent
-
-    input_path = find_latest_json(here, DEFAULT_INPUT_GLOB) or find_latest_json(Path.cwd(), DEFAULT_INPUT_GLOB)
-    if input_path is None:
+    # V GitHub pipeline bude JSON vždy v outputs/all_campaigns.json
+    input_path = DEFAULT_INPUT_PATH
+    if not input_path.exists():
         raise SystemExit(
-            f"❌ Nenašel jsem žádný soubor podle patternu '{DEFAULT_INPUT_GLOB}'.\n"
-            "Dej JSON do stejné složky jako skript nebo skript spusť ve složce s JSONem."
+            f"❌ Nenašel jsem vstupní JSON: {input_path}\n"
+            "Nejdřív musí doběhnout download_all_campaigns.py, který vytvoří outputs/all_campaigns.json"
         )
 
     print(f"📥 Načítám: {input_path}")
@@ -156,13 +159,16 @@ def main():
     ordered_cols = [c for c in ordered_cols if c in df.columns]
     df = df[ordered_cols]
 
-    out_path = here / OUT_XLSX_NAME
+    # vždy zapisujeme do outputs/ a přepisujeme stejný soubor
+    OUT_XLSX_PATH.parent.mkdir(exist_ok=True)
+
+    out_path = OUT_XLSX_PATH
     print(f"💾 Zapisuju: {out_path}")
 
     with pd.ExcelWriter(out_path, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="CAMPAIGN_STATS")
 
-        # summary podle účtu + kampaně (stejně jako předtím)
+        # summary podle účtu + kampaně
         sum_cols = [f"stats_{k}" for k in STATS_KEYS if k not in ("latest_action_id", "step_count")]
         agg_dict = {c: "sum" for c in sum_cols}
         if "stats_latest_action_id" in df.columns:
@@ -170,7 +176,7 @@ def main():
         if "stats_step_count" in df.columns:
             agg_dict["stats_step_count"] = "max"
 
-        # activated/deactivated: dáme min/max (kdy poprvé aktivováno, kdy naposledy deaktivováno)
+        # activated/deactivated
         if "activated" in df.columns:
             agg_dict["activated"] = "min"
         if "deactivated" in df.columns:
