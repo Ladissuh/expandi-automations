@@ -1,1 +1,56 @@
+name: Expandi weekly report
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 7 * * 3"  # každou středu 07:00 UTC
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests python-dotenv pandas openpyxl
+
+      - name: Run download (Expandi -> JSON)
+        env:
+          EXPANDI_KEY: ${{ secrets.EXPANDI_KEY }}
+          EXPANDI_SECRET: ${{ secrets.EXPANDI_SECRET }}
+          EXPANDI_USERNAME: ${{ secrets.EXPANDI_USERNAME }}
+          EXPANDI_PASSWORD: ${{ secrets.EXPANDI_PASSWORD }}
+        run: |
+          python download_all_campaigns.py
+
+      - name: Build Excel (JSON -> XLSX)
+        run: |
+          python json_to_excel_campaigns.py
+
+      - name: List outputs
+        run: |
+          echo "=== outputs ==="
+          ls -la outputs || true
+
+      - name: Upload XLSX to GitHub Release (tag: latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Expandi report
+          files: outputs/*.xlsx
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
