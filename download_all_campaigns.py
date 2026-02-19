@@ -50,7 +50,6 @@ DEFAULT_PARAMS = {"page": 1, "limit": 100}
 SLEEP_BETWEEN_ACCOUNTS_SEC = 0.2
 RATE_LIMIT_SLEEP_SEC = 5
 
-ENV_FALLBACK_ABS = Path("/Users/ladis/Dateio Python Projects/expandi_report/.env")
 
 
 # ============================================================
@@ -58,15 +57,17 @@ ENV_FALLBACK_ABS = Path("/Users/ladis/Dateio Python Projects/expandi_report/.env
 # ============================================================
 
 def load_env():
+    # Lokálně můžeš mít .env vedle skriptu.
+    # Na GitHub Actions poběží secrets jako env vars, takže .env není potřeba.
     script_env = Path(__file__).with_name(".env")
     if script_env.exists():
         load_dotenv(dotenv_path=script_env)
-    elif ENV_FALLBACK_ABS.exists():
-        load_dotenv(dotenv_path=ENV_FALLBACK_ABS)
     else:
+        # načte případné env vars (v GitHubu už budou nastavené)
         load_dotenv()
 
 load_env()
+
 
 EXPANDI_KEY = (os.getenv("EXPANDI_KEY") or "").strip()          # from -H 'key: ...'
 EXPANDI_SECRET = (os.getenv("EXPANDI_SECRET") or "").strip()    # from -H 'secret: ...'
