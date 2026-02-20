@@ -3,7 +3,7 @@ name: Expandi weekly report
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: "27 14 * * 5"  # každou středu 07:00 UTC
+    - cron: "0 6 * * 3"  # každou středu 07:00 UTC
 
 permissions:
   contents: write
